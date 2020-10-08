@@ -1,18 +1,19 @@
 <html>
-
 <head>
 
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />	
+	 <script type="text/javascript" src="amazon-connect-chat.js"></script>
+	 
+	<script src="https://use.fontawesome.com/releases/v5.0.13/js/all.js"></script>
     <script src="https://code.jquery.com/jquery-3.1.0.min.js"></script>
     <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
-    <script type="text/javascript" src="amazon-connect-chat.js"></script>
     <link href="https://maxcdn.bootstrapcdn.com/font-awesome/4.6.3/css/font-awesome.min.css" rel="stylesheet" integrity="sha384-T8Gy5hrqNKT+hzMclPo118YTQO6cYprQmhrYwIiQ/3axmI1hQomh7Ud2hPOy8SP1" crossorigin="anonymous">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/2.1.3/jquery.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/malihu-custom-scrollbar-plugin/3.1.3/jquery.mCustomScrollbar.concat.min.js"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/malihu-custom-scrollbar-plugin/3.1.3/jquery.mCustomScrollbar.min.css" rel="stylesheet" />
 
-    <style>
+<style>
          :root {
             --body-bg: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
             --msger-bg: #fff;
@@ -958,8 +959,8 @@ outline : none;
         }
         
         .msg-img {
-            width: 50px;
-            height: 50px;
+            width: 30px;
+            height: 30px;
             margin-right: 10px;
             background: #ddd;
             background-repeat: no-repeat;
@@ -991,9 +992,7 @@ outline : none;
             font-size: 0.85em;
         }
         
-        .left-msg .msg-bubble {
-            border-bottom-left-radius: 0;
-        }
+        
         
         .right-msg {
             flex-direction: row-reverse;
@@ -1010,6 +1009,14 @@ outline : none;
             margin: 0 0 0 10px;
         }
         
+		.left-msg .msg-bubble {
+            background: #929294;
+    color: #fff;
+    border-bottom-right-radius: 0;
+    width: 85%;
+        }
+		
+		
         .msger-inputarea {
             display: flex;
             padding: 10px;
@@ -1060,7 +1067,7 @@ outline : none;
 		margin-bottom : 500px
 		}
 		
-		
+				
 
     </style>
 </head>
@@ -1078,8 +1085,7 @@ outline : none;
                     <div class="row" style="display: flex;">
                         <div style="display: flex;">
                             <button name = "firstName" id = "firstName"type="submit" class="message-submit1" value = "You" >Start Chat</button>
-                        </div>
-                       
+						</div>
                     </div>
 
 
@@ -1087,38 +1093,15 @@ outline : none;
             </div>
 
             <div class="msger-header-options">
-                <span><i class="fa fa-close" style="cursor: pointer;" title="End Chat" id="endChat">
-            </i>
-            </span>
+			
+                <span  style="cursor: pointer;" title="End Chat" id="endChat" onclick="clearBox('chatbody')" >&times;</span>
+            
+            
             </div>
         </header>
 
-        <main class="msger-chat">
-            <div class="msg left-msg">
-                <div class="msg-bubble">
-                    <div class="msg-info">
-                        <div class="msg-info-name">SYSTEM</div>
-                        <div class="msg-info-time"></div>
-                    </div>
-
-                    <div class="msg-text">
-                         welcome!. 😄
-                    </div>
-                </div>
-            </div>
-
-            <div class="msg right-msg">
-                
-                    <div class="msg-info">
-                        <div class="msg-info-name"></div>
-                        <div class="msg-info-time"></div>
-                    </div>
-
-                    <div class="msg-text">
-                        
-                    </div>
-                
-            </div>
+        <main id = "chatbody" class="msger-chat">
+            
         </main>
 
         <form class="msger-inputarea">
@@ -1191,6 +1174,7 @@ outline : none;
                             session = connect.ChatSession.create({
                                 chatDetails: result.data.startChatResult,
                                 type: "CUSTOMER"
+								
                             });
                         },
                         error: function(result) {
@@ -1209,11 +1193,31 @@ outline : none;
 
                             session.onConnectionEstablished((data) => {
                                 console.log("Established!");
+								
                             })
 
-                            session.onMessage((message) => {
-                                getTranscript();
-                                console.log("Received message: " + JSON.stringify(message));
+                            session.onMessage((message) => { 					
+								console.log("Received message: " + JSON.stringify(message));
+								var obj = message;
+								console.log(" Normal content without condition : "+obj.data.Content);
+								var content = obj.data.Content;
+								
+								 if (obj.data.ParticipantRole === 'CUSTOMER'  && content !== null && content !== undefined ) {
+									showTranscript(content);
+									console.log("customer message :" + content);
+									}
+
+								if (obj.data.ParticipantRole === 'AGENT' && content !== null && content !== undefined  ) {
+									agentResponse(content);
+									console.log("Agent message :" + content);
+									}
+				
+								if (obj.data.ParticipantRole ===  'SYSTEM' && content !== null && content !== undefined  ) {
+									systemResponse(content);
+									console.log("system message :" + content);
+									}
+								
+								
                             });
 
                             session.onTyping((typingEvent) => {
@@ -1231,6 +1235,7 @@ outline : none;
             });
         });
 
+		
         function sendChat() {
             var message = document.getElementById("chatContent").value;
             $('#chatContent').val('');
@@ -1241,63 +1246,11 @@ outline : none;
                 contentType: "text/plain"
             })
         }
-        var JsonArray;
-        // window.onload = function getTranscript() {
-        //     // setInterval(
-        //     //     function myfunction() {
-        //     session.getTranscript({
-        //         scanDirection: "BACKWARD",
-        //         sortOrder: "ASCENDING",
-        //         maxResults: 15
-        //     }).then(response => {
-        //         console.log("Current transcript: ");
-        //         console.log(response.data.Transcript);
-        //         JsonArray = response.data.Transcript;
-        //         var obj = JsonArray[JsonArray.length - 1];
-        //         var message = obj.Content;
-        //         if (obj.ParticipantRole === 'CUSTOMER' && message !== null && message !== undefined) {
-        //             showTranscript(message);
-        //         }
-
-        //         if (obj.ParticipantRole === 'AGENT' && message !== null && message !== undefined) {
-        //             agentResponse(message);
-        //         }
-
-        //     });
-        //     // }, 2000);
-        // };
-
-        function getTranscript() {
-            session.getTranscript({
-                scanDirection: "BACKWARD",
-                sortOrder: "ASCENDING",
-                maxResults: 15
-            }).then(response => {
-                console.log("Current transcript: ");
-                console.log(response.data.Transcript);
-                JsonArray = response.data.Transcript;
-                var obj = JsonArray[JsonArray.length - 1];
-                var message = obj.Content;
-                if (obj.ParticipantRole === 'CUSTOMER'  && message !== null && message !== undefined ) {
-                    showTranscript(message);
-                }
-
-                if (obj.ParticipantRole === 'AGENT' && message !== null && message !== undefined  ) {
-                    agentResponse(message);
-                }
-				if (obj.ParticipantRole ===  'SYSTEM' && message !== null && message !== undefined  ) {
-                    systemResponse(message);
-                }
-
-            });
-        };
-
+       
         function showTranscript(message) {
             appendMessage(PERSON_NAME, PERSON_IMG, "right", message);
             msgerInput.value = "";
         }
-
-
 
         function endChat() {
             session.controller.disconnectParticipant();
@@ -1318,10 +1271,17 @@ outline : none;
             }
         });
 
-        
+        //toggle
 		function toggler(divId) {
     $("#" + divId).toggle();
 	}
+	
+	//Chat body reset..
+	function clearBox(elementID)
+{
+    document.getElementById('chatbody').innerHTML = "";
+}
+	
     </script>
 
     <script>
@@ -1361,6 +1321,7 @@ outline : none;
             //   Simple solution for small apps
             const msgHTML = `
                   <div class="msg ${side}-msg">
+				   <div class="msg-img" style="background-image: url(${img})"></div>
                     <div class="msg-bubble">
                       <div class="msg-info">
                         <div class="msg-info-name">${name}</div>
@@ -1380,7 +1341,7 @@ outline : none;
             appendMessage(SYSTEM_MESSAGE, BOT_IMG, "left", message);
         }
         function agentResponse(message) {
-            appendMessage(AGENT_NAME, BOT_IMG, "left", message);
+            appendMessage(AGENT_NAME, PERSON_IMG, "left", message);
         }
 
         // Utils
